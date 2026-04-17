@@ -21,6 +21,26 @@
 		{
 			"Name": "SimpleFPSFeatureKit",
 			"Enabled": true
+		},
+		{
+			"Name": "GameFeatures",
+			"Enabled": true
+		},
+		{
+			"Name": "ModularGameplay",
+			"Enabled": true
+		},
+		{
+			"Name": "SimpleFPSCore",
+			"Enabled": true
+		},
+		{
+			"Name": "SimpleModularGameplay",
+			"Enabled": true
+		},
+		{
+			"Name": "SimpleInputExpand",
+			"Enabled": true
 		}
 	]
 }

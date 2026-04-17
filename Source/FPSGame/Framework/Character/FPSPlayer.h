@@ -4,17 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Core/FPSCharacterBase.h"
+#include "Interface/SimpleInputInterface.h"
 #include "FPSPlayer.generated.h"
 
 //配置文件归到Game
 UCLASS(config=Game)
-class FPSGAME_API AFPSPlayer : public AFPSCharacterBase
+class FPSGAME_API AFPSPlayer : public AFPSCharacterBase, public ISimpleInputInterface
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
-	AFPSPlayer();
+	AFPSPlayer(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned
@@ -24,12 +25,15 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+public:
+	//输入泛化接口
+	virtual void K2_OnActionInputTag_Implementation(ETriggerEvent InEvent, const FInputActionValue& InValue, FGameplayTag InTag) override;
+	
+protected:
 	// Called to bind functionality to input
 	//绑定输入行为
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-protected:
 	//注册输入
 	virtual void NotifyControllerChanged() override;
-	
 };
