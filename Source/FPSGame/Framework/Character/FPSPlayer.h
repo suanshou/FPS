@@ -7,6 +7,7 @@
 #include "Interface/SimpleInputInterface.h"
 #include "FPSPlayer.generated.h"
 
+class USimplePlayerItemInterComponent;
 //配置文件归到Game
 UCLASS(config=Game)
 class FPSGAME_API AFPSPlayer : public AFPSCharacterBase, public ISimpleInputInterface
@@ -27,8 +28,9 @@ public:
 
 public:
 	//输入泛化接口
-	virtual void K2_OnActionInputTag_Implementation(ETriggerEvent InEvent, const FInputActionValue& InValue, FGameplayTag InTag) override;
-	
+	virtual void K2_OnActionInputTag_Implementation(ETriggerEvent InEvent, const FInputActionValue& InValue,
+	                                                FGameplayTag InputTag) override;
+
 protected:
 	// Called to bind functionality to input
 	//绑定输入行为
@@ -36,4 +38,9 @@ protected:
 
 	//注册输入
 	virtual void NotifyControllerChanged() override;
+
+protected:
+	//存储临时玩家交互组件，减少内存消耗
+	UPROPERTY()
+	TWeakObjectPtr<USimplePlayerItemInterComponent> InteractionComponent;
 };

@@ -3,7 +3,9 @@
 
 #include "FPSPlayer.h"
 
+#include "EnhancedInputComponent.h"
 #include "Component/SimpleFPSInputComponent.h"
+#include "Component/SimplePlayerItemInterComponent.h"
 #include "Components/SimpleInputComponent.h"
 
 
@@ -36,9 +38,28 @@ void AFPSPlayer::Tick(float DeltaTime)
 }
 
 void AFPSPlayer::K2_OnActionInputTag_Implementation(ETriggerEvent InEvent, const FInputActionValue& InValue,
-                                                    FGameplayTag InTag)
+                                                    FGameplayTag InputTag)
 {
-	ISimpleInputInterface::K2_OnActionInputTag_Implementation(InEvent, InValue, InTag);
+	if (InputTag.GetTagName() == TEXT("PickUp"))
+	{
+		if (InEvent == ETriggerEvent::Triggered)
+		{
+			if (InteractionComponent.IsValid())
+			{
+				InteractionComponent->Trigger(InValue);
+			}
+		}
+	}
+	else if (InputTag.GetTagName() == TEXT("Throw"))
+	{
+		if (InEvent == ETriggerEvent::Triggered)
+		{
+			if (InteractionComponent.IsValid())
+			{
+				InteractionComponent->Throw(InValue);
+			}
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -53,6 +74,8 @@ void AFPSPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	{
 		InSimpleInputComponent->SetupPlayerInputComponent(PlayerInputComponent);
 	}
+
+	InteractionComponent = FindComponentByClass<USimplePlayerItemInterComponent>();
 }
 
 void AFPSPlayer::NotifyControllerChanged()
