@@ -36,3 +36,8 @@ void AFPSCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
+USkeletalMeshComponent* AFPSCharacterBase::GetCharacterMesh_Implementation()
+{
+	return GetMesh();
+}
+

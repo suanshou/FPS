@@ -87,6 +87,13 @@ protected:
 	void OnInteractingItemTriggerEnd(ASimpleItemActorBase* InInteractingItem, bool bIsPutPack);
 
 public:
+	UFUNCTION(NetMulticast, Unreliable, BlueprintCallable, Category="ItemInteractionComponent")
+	void PlayMontageNetMultiCast(
+		UAnimMontage* InMontage,
+		float InPlayRate = 1.f,
+		FName StartSectionName = NAME_None);
+
+public:
 	//泛化外部接口
 	void ServerTriggerItem(ASimpleItemActorBase* NewTriggerItem, bool bForceInHand = false);
 

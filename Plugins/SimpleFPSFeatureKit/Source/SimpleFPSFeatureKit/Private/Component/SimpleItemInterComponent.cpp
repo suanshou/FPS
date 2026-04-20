@@ -3,6 +3,7 @@
 
 #include "Component/SimpleItemInterComponent.h"
 
+#include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -13,7 +14,7 @@ USimpleItemInterComponent::USimpleItemInterComponent(const FObjectInitializer& O
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-	
+
 
 	// ...
 	//支持网络同步
@@ -64,6 +65,15 @@ void USimpleItemInterComponent::EndTriggerInteractingItem()
 	}
 
 	EndTriggerSelectingItemOnServer(false);
+}
+
+void USimpleItemInterComponent::PlayMontageNetMultiCast_Implementation(UAnimMontage* InMontage, float InPlayRate,
+                                                                       FName StartSectionName)
+{
+	if (ACharacter* PlayerCharacter = Cast<ACharacter>(GetOwner()))
+	{
+		PlayerCharacter->PlayAnimMontage(InMontage, InPlayRate, StartSectionName);
+	}
 }
 
 void USimpleItemInterComponent::ServerTriggerItem(ASimpleItemActorBase* NewTriggerItem, bool bForceInHand)
