@@ -105,7 +105,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Weapon Instance Defaults|Basic")
 	float MaxDamageRange = 30000.f;
 
-	//检测范围
+	//子弹检测范围
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Weapon Instance Defaults|Basic")
 	float BulletRadius = 5.f;
 
@@ -161,7 +161,7 @@ protected:
 
 	//站立到移动的阈值
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Weapon Instance Defaults|Spread|Multiplier")
-	float StandStillToMovingSpeedRange = 20.f;
+	float StandingStillToMovingSpeedRange = 20.f;
 
 	//蹲下散射倍率
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Weapon Instance Defaults|Spread|Multiplier")
@@ -171,6 +171,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Weapon Instance Defaults|Spread|Multiplier")
 	float TransitionRate_Crouching = 5.f;
 
+	//是否绘制检测
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Weapon Instance Defaults|Spread|Multiplier")
 	bool bDrawDebug = false;
 
@@ -191,16 +192,143 @@ private:
 	float CrouchingMultiplier = 1.f;
 
 public:
+	//支持网络同步
+	virtual bool IsSupportedForNetworking() const override { return true; }
+
+	//获取世界指针
+	virtual class UWorld* GetWorld() const override final;
+
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
+public:
+	//武器每帧进行的运算
+	//武器的散射倍率，热量等
+	void WeaponTick(float DeltaSeconds);
+
+	//装备
+	void OnEquipped(UObject* InInstigator);
+	//卸载
+	void OnUnEquipped(UObject* InInstigator);
+
+	//添加散射
+	void AddSpread();
+	//更新长按开火时连续射击的时间
+	//每次射击GAS会记录开火时间
+	void UpdateFiringTime();
+
+public:
+	//获取武器槽
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	ESimpleWeaponSlot GetWeaponSlot() const { return WeaponSlot; }
+
+	//获取武器槽名称
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	FName GetInventorySlotName() const { return InventorySlotName; }
+
+	//获取武器槽位置矫正值
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	FTransform GetInventoryRelativeTransform() const { return InventoryRelativeTransform; }
+
+	//获取武器技能
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	TArray<FWeaponBindingAbility> GetBindingAbilities() const { return BindingAbilities; }
+
+	//获取装备动画
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	FSimpleWeaponEquippedMontage GetEquippedMontage() const { return EquippedMontage; }
+
+	//获取卸载动画
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	FSimpleWeaponEquippedMontage GetUnequippedMontage() const { return UnEquippedMontage; }
+
+	//获取当前的子弹量
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	int32 GetCurrentCartridge() const { return CurrentCartridge; }
+
+	//获取弹夹容量
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	int32 GetClipSize() const { return ClipSize; }
+
+	//获取每发子弹的弹丸数量
+	int32 GetBulletsPerCartridge() const { return BulletsPerCartridge; }
+
+	//获取当前散射角
+	float GetCalculatedSpreadAngle() const { return CurrentSpreadAngle; }
+
+	//获取当前散射角倍率
+	float GetCalculatedSpreadAngleMultiplier() const
+	{
+		return bHasFirstShotAccuracy ? 0.f : CurrentSpreadAngleMultiplier;
+	}
+
+	//获取首发精准判定
+	bool GetHasFirstShotAccuracy() const { return bHasFirstShotAccuracy; }
+	//获取散射角指数
+	float GetSpreadExponent() const { return SpreadExponent; }
+
+	//获取最大伤害范围
+	float GetMaxDamageDistance() const { return MaxDamageRange; }
+	//获取子弹检测范围
+	float GetBulletRadius() const { return BulletRadius; }
+	//获取是否绘制检测
+	bool GetCanDrawDebug() const { return bDrawDebug; }
+
+	//设置装备武器的动画参数
+	//单一职责原则，动画相关都交给蓝图执行
+	UFUNCTION(BlueprintImplementableEvent, Category="Weapon Animation")
+	void SetAnimationParamsOnEquipped(UObject* InInstigator);
+
+	//设置卸载武器的动画参数
+	//单一职责原则，动画相关都交给蓝图执行
+	UFUNCTION(BlueprintImplementableEvent, Category="Weapon Animation")
+	void SetAnimationParamsOnUnEquipped(UObject* InInstigator);
+
+	//武器热量限制
+	inline float ClampHeat(float NewHeat)
+	{
+		float MinHeat;
+		float MaxHeat;
+		ComputeHeatRange(MinHeat, MaxHeat);
+
+		return FMath::Clamp(NewHeat, MinHeat, MaxHeat);
+	}
+
+	//更新散射
+	bool UpdateSpread(float DeltaSeconds);
+	//更新加成
+	bool UpdateMultipliers(float DeltaSeconds);
+
+public:
+	//设置行为发起者
+	void SetInstigator(UObject* InInstigator) { Instigator = InInstigator; }
+	//子弹消耗
+	void CartridgeCost(int32 CostCounts);
+	//装弹
+	void ReloadCartridge(int32 CartridgeCounts);
+
+	//获取发起者
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	UObject* GetInstigator() const { return Instigator; }
+
+	//获取发起角色
+	UFUNCTION(BlueprintPure, Category="Weapon Instance")
+	ACharacter* GetCharacter() const;
+
+private:
+	//武器散射角范围计算
+	void ComputeSpreadRange(float& MinSpread, float& MaxSpread);
+	//武器热量范围计算
+	void ComputeHeatRange(float& MinHeat, float& MaxHeat);
+
+public:
 	//武器实例化
 	void InitInstance()
 	{
 		CurrentCartridge = CartridgeCountsOnSpawn;
 	}
-	
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
-	//继承者
+	//行为发起者
 	UPROPERTY(Replicated)
 	UObject* Instigator;
 
