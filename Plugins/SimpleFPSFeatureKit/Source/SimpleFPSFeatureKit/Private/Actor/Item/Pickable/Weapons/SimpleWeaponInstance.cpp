@@ -4,6 +4,7 @@
 #include "Actor/Item/Pickable/Weapons/SimpleWeaponInstance.h"
 
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 
 USimpleWeaponInstance::USimpleWeaponInstance()
@@ -93,18 +94,66 @@ bool USimpleWeaponInstance::UpdateSpread(float DeltaSeconds)
 
 bool USimpleWeaponInstance::UpdateMultipliers(float DeltaSeconds)
 {
+	//散射倍率近似误差
 	const float MultiplierNearlyEqualThreshlod = 0.05f;
 
+	//角色
 	ACharacter* PlayerCharacter = GetCharacter();
+	//角色移动组件
 	UCharacterMovementComponent* CharMoveComp = PlayerCharacter ? PlayerCharacter->GetCharacterMovement() : nullptr;
+	//角色移动速度
 	const float CharacterSpeed = PlayerCharacter ? PlayerCharacter->GetVelocity().Size() : 0.f;
 
+	//角色移动时
+	//散射目标值
+	//GetMappedRangeValueClamped对于给定的参数3，返回对应的百分比
 	const float MovementTargetAngle = FMath::GetMappedRangeValueClamped(
 		FVector2D(StandingStillSpeedThreshold, StandingStillSpeedThreshold + StandingStillToMovingSpeedRange),
 		FVector2D(SpreadAngleMultiplier_StandingStill, 1.f),
 		CharacterSpeed);
 
-	return false;
+	//站立时的散射倍率
+	//FInterpTo贝塞尔曲线做平滑过渡
+	StandingStillMultiplier = FMath::FInterpTo(StandingStillMultiplier,
+	                                           MovementTargetAngle,
+	                                           DeltaSeconds,
+	                                           TransitionRate_StandingStill);
+	//是否是站立时的最小倍率
+	const bool bStandingStillMultiplierAtMin = FMath::IsNearlyEqual(StandingStillMultiplier,
+	                                                                SpreadAngleMultiplier_StandingStill,
+	                                                                MultiplierNearlyEqualThreshlod);
+
+	//角色蹲下时
+	//是否蹲下
+	const bool bIsCrouching = (CharMoveComp != nullptr) && CharMoveComp->IsCrouching();
+	//蹲下时的散射倍率
+	const float CrouchingTargetValue = bIsCrouching ? SpreadAngleMultiplier_Crouching : 1.f;
+	CrouchingMultiplier = FMath::FInterpTo(CrouchingMultiplier,
+	                                       CrouchingTargetValue,
+	                                       DeltaSeconds,
+	                                       TransitionRate_Crouching);
+
+	//是否是蹲下时的最小倍率
+	const bool bCrouchingMultiplierAtMin = FMath::IsNearlyEqual(CrouchingMultiplier,
+	                                                            SpreadAngleMultiplier_Crouching,
+	                                                            MultiplierNearlyEqualThreshlod);
+
+	//瞄准时
+	float AimingAlpha = 0.f;
+	const float AimingMultiplier = FMath::GetMappedRangeValueClamped(
+		FVector2D(0.f, 1.f),
+		FVector2D(1.f, SpreadAngleMultiplier_Crouching),
+		AimingAlpha);
+	const bool bAimingMultiplierAtMin = FMath::IsNearlyEqual(AimingMultiplier,
+	                                                         SpreadAngleMultiplier_Aiming,
+	                                                         MultiplierNearlyEqualThreshlod);
+
+	//叠加所有的倍率
+	CurrentSpreadAngleMultiplier = StandingStillMultiplier * CrouchingMultiplier * AimingMultiplier;
+
+	//是否都在最小值
+	//用于首发精准
+	return bStandingStillMultiplierAtMin && bCrouchingMultiplierAtMin && bAimingMultiplierAtMin;
 }
 
 void USimpleWeaponInstance::CartridgeCost(int32 CostCounts)
