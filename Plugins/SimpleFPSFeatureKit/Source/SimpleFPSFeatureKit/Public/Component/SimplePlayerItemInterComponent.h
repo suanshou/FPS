@@ -10,6 +10,7 @@
 
 struct FInputActionValue;
 
+//玩家交互组件
 UCLASS(BlueprintType,Blueprintable,ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class SIMPLEFPSFEATUREKIT_API USimplePlayerItemInterComponent : public USimpleItemInterComponent
 {
