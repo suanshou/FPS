@@ -3,6 +3,7 @@
 
 #include "Component/SimpleInvMgrComponent.h"
 
+#include "Actor/Item/Pickable/Inventory/SimpleItemActorInventory.h"
 #include "Component/SimplePlayerItemInterComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -211,31 +212,37 @@ bool USimpleInvMgrComponent::GetItemEntry(TSubclassOf<USimpleItemPickableDefinit
 		TargetEntry = *ItemEntry;
 		return true;
 	}
-	
+
 	return false;
 }
 
 bool USimpleInvMgrComponent::IsAddItemToInventory(const TSubclassOf<USimpleItemPickableDefinition>& ItemDef)
 {
-	return false;
+	FSimpleItemInventoryEntry* TempEntry = nullptr;
+	return InventoryList.IsAddEntry(ItemDef, TempEntry);
 }
 
 bool USimpleInvMgrComponent::IsRemoveItemFromInventory(const TSubclassOf<USimpleItemPickableDefinition>& ItemDef,
                                                        const int32& ItemCounts)
 {
-	return false;
+	FSimpleItemInventoryEntry* TempEntry = nullptr;
+	return InventoryList.IsRemoveEntry(ItemDef, ItemCounts, TempEntry);
 }
 
 int32 USimpleInvMgrComponent::AddItemToInventory(const TSubclassOf<USimpleItemPickableDefinition>& ItemDef,
                                                  const int32& ItemCounts)
 {
-	return 0;
+	check(GetOwner() && GetOwner()->HasAuthority());
+
+	return InventoryList.AddEntry(ItemDef, ItemCounts);
 }
 
 int32 USimpleInvMgrComponent::RemoveItemFromInventory(const TSubclassOf<USimpleItemPickableDefinition>& ItemDef,
                                                       const int32& ItemCounts)
 {
-	return 0;
+	check(GetOwner() && GetOwner()->HasAuthority());
+
+	return InventoryList.RemoveEntry(ItemDef, ItemCounts);
 }
 
 void USimpleInvMgrComponent::DiscardItemFromInventory(const TSubclassOf<USimpleItemPickableDefinition>& ItemDef,
@@ -245,4 +252,30 @@ void USimpleInvMgrComponent::DiscardItemFromInventory(const TSubclassOf<USimpleI
 
 void USimpleInvMgrComponent::TakeOutItemFromInventory(const TSubclassOf<USimpleItemPickableDefinition>& ItemDef)
 {
+	check(GetOwner()&& GetOwner()->HasAuthority() && GetWorld());
+
+	if (ItemDef)
+	{
+		USimplePlayerItemInterComponent* IC_Player = GetItemInteractionComponent();
+		const USimpleItemPickableDefinition* TmpItemDef = ItemDef.GetDefaultObject();
+
+		if (IC_Player && TmpItemDef->bAllowInHand && TmpItemDef->ItemClass)
+		{
+			if (InventoryList.RemoveEntry(ItemDef, 1))
+			{
+			}
+		}
+	}
+}
+
+void USimpleInvMgrComponent::DiscardItemFromInventoryOnServer_Implementation(
+	TSubclassOf<USimpleItemPickableDefinition> ItemDef, int32 ItemCounts)
+{
+	DiscardItemFromInventory(ItemDef, ItemCounts);
+}
+
+void USimpleInvMgrComponent::TakeOutItemFromInventoryOnServer_Implementation(
+	TSubclassOf<USimpleItemPickableDefinition> ItemDef)
+{
+	TakeOutItemFromInventory(ItemDef);
 }

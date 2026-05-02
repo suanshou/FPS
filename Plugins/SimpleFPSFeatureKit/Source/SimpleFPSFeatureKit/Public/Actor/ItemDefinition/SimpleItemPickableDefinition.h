@@ -32,6 +32,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Inventory")
 	bool bAllowInHand;
 
+	//物品分类
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Inventory")
 	TSubclassOf<ASimpleItemActorInventory> ItemClass;
 };

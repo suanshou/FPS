@@ -155,6 +155,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager Component")
 	void TakeOutItemFromInventory(const TSubclassOf<USimpleItemPickableDefinition>& ItemDef);
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager Component", Server, Reliable)
+	void DiscardItemFromInventoryOnServer(TSubclassOf<USimpleItemPickableDefinition> ItemDef, int32 ItemCounts);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager Component", Server, Reliable)
+	void TakeOutItemFromInventoryOnServer(TSubclassOf<USimpleItemPickableDefinition> ItemDef);
+
 private:
 	//库存列表
 	UPROPERTY(Replicated)
